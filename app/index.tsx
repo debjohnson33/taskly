@@ -1,4 +1,4 @@
-import { View, StyleSheet, TextInput, ScrollView } from "react-native";
+import { View, StyleSheet, TextInput, FlatList, Text } from "react-native";
 
 import { ShoppingListItem } from "../components/ShoppingListItem";
 import { theme } from "../theme";
@@ -7,13 +7,10 @@ import { useState } from "react";
 type ShoppingListItemType = {
   id: string;
   name: string;
+  completedAtTimestamp?: number;
 };
 
-const initialList: ShoppingListItemType[] = [
-  { id: "1", name: "Coffee" },
-  { id: "2", name: "Tea" },
-  { id: "3", name: "Sugar" },
-];
+const initialList: ShoppingListItemType[] = [];
 
 export default function App() {
   const [shoppingList, setShoppingList] =
@@ -30,24 +27,55 @@ export default function App() {
       setValue("");
     }
   };
+  const handleDelete = (id: string) => {
+    const newShoppingList = shoppingList.filter((item) => item.id !== id);
+    setShoppingList(newShoppingList);
+  };
+  const handleToggleComplete = (id: string) => {
+    const newShoppingList = shoppingList.map((item) => {
+      if (item.id === id) {
+        return {
+          ...item,
+          completedAtTimestamp: item.completedAtTimestamp
+            ? undefined
+            : Date.now(),
+        };
+      }
+      return item;
+    });
+    setShoppingList(newShoppingList);
+  };
+
   return (
-    <ScrollView
+    <FlatList
+      data={shoppingList}
       style={styles.container}
       contentContainerStyle={styles.contentContainer}
       stickyHeaderIndices={[0]}
-    >
-      <TextInput
-        placeholder="Enter your item"
-        style={styles.textInput}
-        value={value}
-        onChangeText={setValue}
-        returnKeyType="done"
-        onSubmitEditing={handleSubmit}
-      />
-      {shoppingList.map((item) => {
-        return <ShoppingListItem key={item.id} name={item.name} />;
-      })}
-    </ScrollView>
+      ListEmptyComponent={() => (
+        <View style={styles.listEmptyContainer}>
+          <Text>Your shopping list is empty</Text>
+        </View>
+      )}
+      ListHeaderComponent={
+        <TextInput
+          placeholder="Enter your item"
+          style={styles.textInput}
+          value={value}
+          onChangeText={setValue}
+          returnKeyType="done"
+          onSubmitEditing={handleSubmit}
+        />
+      }
+      renderItem={({ item }) => (
+        <ShoppingListItem
+          name={item.name}
+          onDelete={() => handleDelete(item.id)}
+          onToggleComplete={() => handleToggleComplete(item.id)}
+          isCompleted={Boolean(item.completedAtTimestamp)}
+        />
+      )}
+    />
   );
 }
 
@@ -70,5 +98,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     borderRadius: 50,
     backgroundColor: theme.colorWhite,
+  },
+  listEmptyContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginVertical: 18,
   },
 });
